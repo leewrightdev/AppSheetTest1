@@ -1,18 +1,21 @@
 <?php
 //namespace AppSheetTest1\HttpCall;
 
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
+
 require_once 'vendor/autoload.php';
 
 /**
- * Class HttpCall
- *
- * Essentially a wrapper for our HTTP calls.
- *
+ * Essentially a bare bones wrapper for our HTTP calls.
  */
-class HttpCall{
+class HttpCall
+{
+
+  const HTTP_SUCCESS = 200;
 
   // Base URL without methods or parameters
-  const BASE_URL='https://appsheettest1.azurewebsites.net/sample/';
+  const BASE_URL = 'https://appsheettest1.azurewebsites.net/sample/';
 
   // Body of return call - presumably json
   private $szBody = '';
@@ -21,7 +24,7 @@ class HttpCall{
   private $iHttpReturn = 0;
 
   /**
-   * @var \GuzzleHttp\Client object for Guzzle client.
+   * @var Client object for Guzzle client.
    *
    * This is Guzzle specific, but could be broken out to a different
    * client and injected to the call at a later point.
@@ -43,22 +46,21 @@ class HttpCall{
    *
    * @param string $szFunction
    * @param string $szParameters
+   *
    * @return bool success or failure
-   * @throws \GuzzleHttp\Exception\GuzzleException
+   * @throws GuzzleException
    */
-  public function sendRequest($szFunction, $szParameters = '')
+  public function sendRequest($szFunction, $szParameters = ''): bool
   {
-    if (strlen($szParameters) > 0)
-    {
-      $szParameters = '?'.$szParameters;
+    if (strlen($szParameters) > 0) {
+      $szParameters = '?' . $szParameters;
     }
 
-    //echo "\n sendRequest function: $szFunction param: $szParameters";
     try
     {
-      $oResponse = $this->oClient->request('GET', $szFunction.$szParameters);
-
-    } catch (\Exception $oException)
+      $oResponse = $this->oClient->request('GET', $szFunction . $szParameters);
+    }
+    catch (Exception $oException)
     {
       //Log message
       return false;
@@ -73,19 +75,23 @@ class HttpCall{
   }
 
   /**
+   * Return the body of the http request
+   *
    * @return string
    */
-  public function getBody()
+  public function getBody(): string
   {
     return $this->szBody;
   }
 
   /**
+   * Return the status code of the http request
+   *
    * @return integer
    */
-  public function getStatus()
+  public function getStatus(): int
   {
-    return (integer) $this->iHttpReturn;
+    return (integer)$this->iHttpReturn;
   }
 
 }
