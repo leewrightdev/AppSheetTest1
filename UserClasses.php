@@ -5,9 +5,9 @@ require_once 'HttpCall.php';
 
 
 /**
- * Class sampleList
+ * Class UserList
  */
-class sampleList
+class UserList
 {
   /**
    * @var array of people ID's from our list call
@@ -15,18 +15,16 @@ class sampleList
   private $aIDs = array();
 
   /**
-   * sampleList constructor.
+   * UserList constructor.
    *
    * @throws \GuzzleHttp\Exception\GuzzleException
    */
   public function __construct()
   {
-    try
-    {
-      $this->aIDs = $this->makeCall();
-    } catch (Exception $E)
-    {
-      echo "makeCall failed: ".$E;
+    try {
+      $this->aIDs = $this->loadList();
+    } catch (Exception $E) {
+      echo "loadList failed: " . $E;
       exit;
     }
 
@@ -48,26 +46,23 @@ class sampleList
    *
    * @todo Guard rails to prevent a circular/endless loop.
    */
-  public function makeCall ($szToken = '') : array
+  private function loadList($szToken = ''): array
   {
     $szParameters = "";
 
     // If there's a token passed in, add it to the request
-    if (strlen($szToken) > 0 )
-    {
-      $szParameters = "token=".(string)$szToken;
+    if (strlen($szToken) > 0) {
+      $szParameters = "token=" . (string)$szToken;
     }
 
     $oCall = new HttpCall (HttpCall::BASE_URL);
 
     // Make the actual call
-    if (!$oCall->sendRequest('list', $szParameters))
-    {
+    if (!$oCall->sendRequest('list', $szParameters)) {
       throw new Exception("Call failed.");
     }
 
-    if ($oCall->getStatus() != HttpCall::HTTP_SUCCESS)
-    {
+    if ($oCall->getStatus() != HttpCall::HTTP_SUCCESS) {
       throw new Exception("Call failed with error code " . $oCall->getStatus() . ".");
     }
 
@@ -77,24 +72,67 @@ class sampleList
     $aResult = (is_array($oJson->{'result'})) ? array_values($oJson->{'result'}) : array();
 
     // If there is a token in the return call, repeat call with token
-    if (isset($oJson->{'token'}))
-    {
-      echo "\nToken=".$oJson->{'token'};
+    if (isset($oJson->{'token'})) {
+      echo "\nToken=" . $oJson->{'token'};
       // Merge previous and recursive results
-      $aResult = array_merge($aResult,$this->makeCall($oJson->{'token'}));
+      $aResult = array_merge($aResult, $this->loadList($oJson->{'token'}));
     }
 
     return ($aResult);
   }
 
-}
+  /**
+   * Get the youngest $iNumber users from the list (default is 5)
+   * @param $iNumber
+   *
+   * @throws \GuzzleHttp\Exception\GuzzleException
+   */
+  public function getYoungest($iNumber=5)
+  {
+    foreach ($this->getIDs() as $iId) {
 
+      try {
+        // load the details
+        $oDetails = new UserDetails($iId);
+
+        // check for valid phone number
+        if (isset($oDetails->{"number"}) && (UserDetails::isValidPhoneNumber($oDetails->{"number"}))) {
+          // add to User array with id as the index
+          $aUsers[$iId] = $oDetails;
+          // echo "\nAdding id=".$iId." as valid number.";
+        } else {
+          // echo "\nSkipping id=".$iId.".";
+        }
+
+      } catch (Exception $E) {
+        echo "\nList reported a valid id, but call for details failed.";
+        echo "\n" . $E->getMessage();
+      }
+    }
+
+    // sort the $aUsers array via the "age" property
+    uasort($aUsers, function ($a, $b) {
+      return (($a->{"age"} < $b->{"age"}) ? 1 : 0);
+    });
+
+    echo "\nYoungest $iNumber:";
+
+    // pop the top $iNumber of $oUser objects off the array
+    for ($i = 0; $i < $iNumber; $i++) {
+
+      $oUser = array_pop($aUsers);
+      echo "\nid=" . $oUser->{"id"} . " age=" . $oUser->{"age"};
+
+    }
+
+  }
+}
 
 /**
  * Load the details from a single user from a call like:
- * // https://appsheettest1.azurewebsites.net/sample/detail/21
+ * https://appsheettest1.azurewebsites.net/sample/detail/21
  */
-class sampleDetails
+class UserDetails
 {
   /**
    * these properties are required for loading a user
@@ -104,7 +142,7 @@ class sampleDetails
   private $aPROPERTIES = array('id', 'name', 'age', 'number', 'photo', 'bio');
 
   /**
-   * sampleDetails constructor.
+   * UserDetails constructor.
    *
    * @param $iId
    *
@@ -112,8 +150,14 @@ class sampleDetails
    */
   public function __construct($iId)
   {
+    try{
 
-    $this->loadDetails($iId);
+      $this->loadDetails($iId);
+
+    } catch (Exception $E){
+      echo "\nCall failed for id=$iId";
+      echo "\n".$E->getMessage();
+    }
 
   }
 
@@ -144,7 +188,7 @@ class sampleDetails
     $oJson = json_decode($oCall->getBody());
 
     // There are a few ways to do this, but let's just create a "magic" class
-    // variable for each property we're looking for.  If a property isn't present,
+    // variable for each property we're looking for this case.  If a property isn't present,
     // throw an exception and skip it.
     foreach ($this->aPROPERTIES as $szProp) {
 

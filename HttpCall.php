@@ -1,5 +1,4 @@
 <?php
-//namespace AppSheetTest1\HttpCall;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
