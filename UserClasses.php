@@ -5,7 +5,10 @@ require_once 'HttpCall.php';
 
 
 /**
- * Class UserList
+ * Provides a list of users from a call like:
+ * https://appsheettest1.azurewebsites.net/sample/list?token=b32b3
+ * If there is a token returned in the result set, the call is repeated
+ * until there isn't a token.
  */
 class UserList
 {
@@ -40,10 +43,8 @@ class UserList
 
   /**
    * @param string $szToken If there's a token being passed, it's a continuation of a previous request
-   *
    * @return array an array of userid's
    * @throws \GuzzleHttp\Exception\GuzzleException
-   *
    * @todo Guard rails to prevent a circular/endless loop.
    */
   private function loadList($szToken = ''): array
@@ -82,9 +83,12 @@ class UserList
   }
 
   /**
-   * Get the youngest $iNumber users from the list (default is 5)
-   * @param $iNumber
+   * Get the youngest $iNumber of users from the list (default is 5)
+   * that have a valid US phone number. Our work is done here so just print results.
+   * The sort function used is:
+   * https://www.php.net/manual/en/function.uasort.php
    *
+   * @param $iNumber
    * @throws \GuzzleHttp\Exception\GuzzleException
    */
   public function getYoungest($iNumber=5)
@@ -96,7 +100,8 @@ class UserList
         $oDetails = new UserDetails($iId);
 
         // check for valid phone number
-        if (isset($oDetails->{"number"}) && (UserDetails::isValidPhoneNumber($oDetails->{"number"}))) {
+        if (isset($oDetails->{"number"}) && (UserDetails::isValidPhoneNumber($oDetails->{"number"})))
+        {
           // add to User array with id as the index
           $aUsers[$iId] = $oDetails;
           // echo "\nAdding id=".$iId." as valid number.";
@@ -124,7 +129,6 @@ class UserList
       echo "\nid=" . $oUser->{"id"} . " age=" . $oUser->{"age"};
 
     }
-
   }
 }
 
@@ -135,17 +139,15 @@ class UserList
 class UserDetails
 {
   /**
-   * these properties are required for loading a user
-   *
+   * These properties are required for loading the details of a user.
    * @var array
    */
   private $aPROPERTIES = array('id', 'name', 'age', 'number', 'photo', 'bio');
 
   /**
-   * UserDetails constructor.
+   * Loads whatever user is passed in when instantiated by "id"
    *
-   * @param $iId
-   *
+   * @param int $iId
    * @throws \GuzzleHttp\Exception\GuzzleException
    */
   public function __construct($iId)
@@ -165,11 +167,10 @@ class UserDetails
    * Loads the details for the user.
    *
    * @param $iId int userid to load
-   *
    * @return bool
    * @throws \GuzzleHttp\Exception\GuzzleException
    */
-  private function loadDetails ($iId)
+  private function loadDetails ($iId) : bool
   {
     $iId = (int) $iId;
 
@@ -196,23 +197,19 @@ class UserDetails
       {
         $this->{$szProp} = $oJson->{$szProp};
       } else {
-        //$this->{$szProp} = '';
         throw new Exception("$szProp wasn't returned");
       }
     }
-
     return true;
-
   }
 
   /**
    * Returns true if string passed in is a valid US telephone number, otherwise false.
    *
    * @param string $szNumber
-   *
    * @return bool
-   *
    * @Note: This would be a good method for unit testing.
+   * @Note: Doesn't take into account +1
    */
   static function isValidPhoneNumber ($szNumber) : bool
   {

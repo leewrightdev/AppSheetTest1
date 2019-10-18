@@ -43,15 +43,15 @@ class HttpCall
   /**
    * Really simple GET request.
    *
-   * @param string $szFunction
+   * @param string $szFunction Currently only "list" and "details" exist.
    * @param string $szParameters
-   *
    * @return bool success or failure
    * @throws GuzzleException
    */
   public function sendRequest($szFunction, $szParameters = ''): bool
   {
-    if (strlen($szParameters) > 0) {
+    if (strlen($szParameters) > 0)
+    {
       $szParameters = '?' . $szParameters;
     }
 
@@ -59,7 +59,7 @@ class HttpCall
     {
       $oResponse = $this->oClient->request('GET', $szFunction . $szParameters);
     }
-    catch (Exception $oException)
+    catch (Exception $E)
     {
       //Log message
       return false;
