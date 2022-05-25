@@ -11,6 +11,6 @@
   ],
   "require": {
     "guzzle/http": "v3.9.2",
-    "guzzlehttp/guzzle": "6.3.3"
+    "guzzlehttp/guzzle": "6.5.6"
   }
 }
